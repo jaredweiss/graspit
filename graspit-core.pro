@@ -105,7 +105,8 @@ HEADERS	+= include/body.h \
 	include/robots/robonaut.h \
 	include/robots/barrett.h \
 	include/FitParabola.h \
-        include/graspitParser.h
+        include/graspitParser.h \
+    include/fileDownloader.h
 
 SOURCES	+= src/arch.cpp \
 	src/bBox.cpp \

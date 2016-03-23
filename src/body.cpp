@@ -49,6 +49,7 @@
 #include "contact.h"
 #include "graspitGUI.h"
 #include "tinyxml.h"
+#include "fileDownloader.h"
 
 #ifdef PLY_READER
 #include "mesh_loader.h"
