@@ -204,7 +204,7 @@ GraspItGUI::processArgs(int argc, char** argv)
     switch(c) {
     case 'r':
       filename = graspitRoot + QString("/models/robots/")+
-	QString(optarg) + QString("/") + QString(optarg) + QString(".cfg");
+    QString(optarg) + QString("/") + QString(optarg) + QString(".xml");
       if (ivmgr->getWorld()->importRobot(filename)==NULL)
 	++errflag;
       break;
