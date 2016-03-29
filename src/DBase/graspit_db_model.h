@@ -30,6 +30,7 @@
 #ifndef _GRASPIT_DB_MODEL_ENTRY_H_
 #define _GRASPIT_DB_MODEL_ENTRY_H_
 
+#include "binvox.h"
 #include "DBPlanner/model.h"
 
 class World;
@@ -38,16 +39,24 @@ class GraspableBody;
 /*! This is the class to define the data entry of model in CGDB
 */
 class GraspitDBModel : public db_planner::Model{
+
+private:
+    Binvox* mBinvox;
+
 protected:
 	//! This is the body representation in GraspIt
-	GraspableBody* mGraspableBody;
+    GraspableBody* mGraspableBody;
 	//! Tells us if the scene graph geometry of this object has been loaded
 	bool mGeometryLoaded;
 
-        //! Loads the geometry for this body
-        virtual int loadGeometry();
+    //! Loads the geometry for this body
+    virtual int loadGeometry();
+
+    //! Loads the binvox for this body
+    virtual int loadBinvox();
+
 public:
-	GraspitDBModel() : mGraspableBody(NULL), mGeometryLoaded(false){}
+    GraspitDBModel() : mGraspableBody(NULL), mBinvox(NULL), mGeometryLoaded(false){}
 	~GraspitDBModel();
 	//! Loads the geometry and initializes the corresponding GraspableBody
 	int load(World* w);

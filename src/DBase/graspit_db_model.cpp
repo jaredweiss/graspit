@@ -52,6 +52,7 @@ int GraspitDBModel::loadGeometry()
 	//load the geometry itself directly from the geometry file stored in the database
 	QString filename = QString(GeometryPath().c_str());
 	QString extension = filename.section('.',-1,-1);
+
 	if (extension == "off") {
 		DBGA("Failed to load .off geometry from file " << GeometryPath());
 		return mGraspableBody->loadGeometryOFF(filename);
@@ -67,12 +68,33 @@ int GraspitDBModel::loadGeometry()
 	}
 }
 
+int GraspitDBModel::loadBinvox()
+{
+    if (mBinvox) delete mBinvox;
+    mBinvox = new Binvox();
+
+    QString filename = QString(GeometryPath().c_str());
+    DBGA("loadbinvox3");
+
+    QString binvoxFilename = QString(filename.section('.',0,-2)) + QString("_50.binvox");
+    DBGA("Trying to side-load 50^3 binvox: " << binvoxFilename.toStdString());
+
+    if (!mBinvox->read_binvox(binvoxFilename.toStdString())) {
+        DBGA("Error reading [" << binvoxFilename.toStdString() << "]");
+        return -1;
+    }
+    return 1;
+}
+
 int GraspitDBModel::load(World* w)
 {
 	// delete the previously loaded graspabody
 	if(mGraspableBody) delete mGraspableBody;
 	// load the body
 	mGraspableBody = new GraspableBody(w, ModelName().c_str());
+
+    DBGA("Attempting to load model: " << ModelName().c_str());
+
 	mGraspableBody->setDBModel(this);
 	//material is default
 	mGraspableBody->setMaterial(w->getMaterialIdx("wood"));
@@ -88,6 +110,13 @@ int GraspitDBModel::load(World* w)
 		mGeometryLoaded = false;
 		return FAILURE;
 	}
+    int loadBinvoxResult = loadBinvox();
+    if (loadBinvoxResult == -1) {
+        DBGA("GraspitDBModel: No .binvox file found for current model");
+    } else if (loadBinvoxResult == 0) {
+        DBGA("GraspitDBModel: Error parsing .binvox file for current model");
+    }
+
 	mGeometryLoaded = true;
 	mGraspableBody->addIVMat();
 

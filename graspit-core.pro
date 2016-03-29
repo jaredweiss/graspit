@@ -104,7 +104,8 @@ HEADERS	+= include/barrett.h \
 	include/EGPlanner/onLineGraspInterface.h \
 	include/EGPlanner/listPlanner.h \
 	include/FitParabola.h \
-	include/shadow.h
+	include/shadow.h \
+    src/DBase/binvox.h
 
 SOURCES	+= src/arch.cpp \
 	src/barrett.cpp \
@@ -179,7 +180,8 @@ SOURCES	+= src/arch.cpp \
 	src/EGPlanner/timeTest.cpp \
 	src/EGPlanner/graspTesterThread.cpp \
 	src/EGPlanner/onLineGraspInterface.cpp \
-	src/EGPlanner/listPlanner.cpp 
+	src/EGPlanner/listPlanner.cpp \  
+    src/DBase/binvox.cpp
 
 #--------------------------------------- Implementations of the collision interface ---------------------------------
 
