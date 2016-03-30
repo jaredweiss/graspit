@@ -115,7 +115,7 @@ public:
 		QObject::connect(showPreGraspRadioButton, SIGNAL(toggled(bool)), this, SLOT(graspTypeChanged()));
 		QObject::connect(showFinalGraspRadioButton, SIGNAL(toggled(bool)), this, SLOT(graspTypeChanged()));
 
-        QObject::connect(saveBinvoxButton, SIGNAL(toggled(bool)), this, SLOT(saveBinvoxButton_clicked()));
+        QObject::connect(saveBinvoxButton, SIGNAL(clicked()), this, SLOT(saveBinvoxButton_clicked()));
 
 		init();
 	}
