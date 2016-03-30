@@ -841,6 +841,125 @@ World::save(const QString &filename)
 	return SUCCESS;
 }
 
+
+/*! Saves the current hand configuration in a binvox with dimensions
+matching the currently loaded graspable body.
+Note: This function can only be run when there is one robot (a hand)
+in the scene and only on graspable body that also must have a binvox
+member variable loaded.
+*/
+int
+World::saveHandVox(const QString &filename)
+{
+
+    if (numHands != 1) {
+        DBGA("saveHandVox: There can only be one hand loaded in the world when exporting a binvox.");
+        return FAILURE;
+    } else if (numGB != 1) {
+        DBGA("saveHandVox: There can only be one graspable body loaded in the world when exporting a binvox.");
+        return FAILURE;
+    }
+
+    DBGA("Attempting to export .binvox");
+
+
+    /*
+
+    QFile file(filename);
+    int i,j,k,l;
+
+    if (!file.open(QIODevice::WriteOnly)) {
+        QTWARNING("could not open " + filename + "for writing");
+        return FAILURE;
+    }
+    QTextStream stream( &file );
+    stream << "<?xml version=\"1.0\" ?>" <<endl;
+    stream << "<world>" << endl;
+    for (i=0;i<numBodies;i++) {
+        if (bodyVec[i]->isA("Body")) {
+            stream<<"\t<obstacle>"<<endl;
+            if(bodyVec[i]->getFilename()=="unspecified"){
+                stream<<"\t\t<body>"<<endl;
+                if(bodyVec[i]->saveToXml(stream)==FAILURE){
+                    QTWARNING("Failed to save body info");
+                    return FAILURE;
+                }
+                stream<<"\t\t</body>"<<endl;
+            }
+            else
+                stream<<"\t\t<filename>"<<bodyVec[i]->getFilename().latin1()<<"</filename>"<<endl;
+            stream<<"\t\t<transform>" <<endl;
+            stream<< "\t\t\t<fullTransform>"<< bodyVec[i]->getTran() << "</fullTransform>" << endl;
+            stream<<"\t\t</transform>" <<endl;
+            stream<<"\t</obstacle>"<<endl;
+        }
+        else if (bodyVec[i]->inherits("GraspableBody")) {
+            stream<<"\t<graspableBody>"<<endl;
+            if(bodyVec[i]->getFilename()=="unspecified"){
+                stream<<"\t\t<body>"<<endl;
+                if(bodyVec[i]->saveToXml(stream)==FAILURE){
+                    QTWARNING("Failed to save body info");
+                    return FAILURE;
+                }
+                stream<<"\t\t</body>"<<endl;
+            }
+            else
+                stream<<"\t\t<filename>"<<bodyVec[i]->getFilename().latin1()<<"</filename>"<<endl;
+            stream<<"\t\t<transform>" <<endl;
+            stream<< "\t\t\t<fullTransform>"<< bodyVec[i]->getTran() << "</fullTransform>" << endl;
+            stream<<"\t\t</transform>" <<endl;
+            stream<<"\t</graspableBody>"<<endl;
+        }
+    }
+
+    for (i=0;i<numRobots;i++) {
+        stream<<"\t<robot>"<<endl;
+        stream<<"\t\t<filename>"<<robotVec[i]->getFilename().latin1()<<"</filename>"<<endl;
+        stream<<"\t\t<dofValues>";
+        robotVec[i]->writeDOFVals(stream);
+        stream << "</dofValues>" << endl;
+        stream<<"\t\t<transform>" <<endl;
+        stream<< "\t\t\t<fullTransform>"<< robotVec[i]->getTran() << "</fullTransform>" << endl;
+        stream<<"\t\t</transform>" <<endl;
+        stream<<"\t</robot>"<<endl;
+    }
+
+    for(i=0;i<numRobots;i++) {
+        for (j=0;j<robotVec[i]->getNumChains();j++) {
+            KinematicChain *chain = robotVec[i]->getChain(j);
+            for (k=0;k<chain->getNumAttachedRobots();k++) {
+                stream<<"\t<connection>"<<endl;
+                stream<< "\t\t<parentRobot>" << i << "</parentRobot>" << endl;
+                stream<< "\t\t<parentChain>" << j << "</parentChain>" << endl;
+                for (l=0;l<numRobots;l++)
+                    if (chain->getAttachedRobot(k) == robotVec[l]) break;
+                stream<< "\t\t<childRobot>" << l << "</childRobot>" << endl;
+                if (chain->getAttachedRobot(k)->getMountPiece()) {
+                    stream<< "\t\t<mountFilename>" << chain->getAttachedRobot(k)->getMountPiece()->getFilename() << "</mountFilename>" << endl;
+                }
+                stream<<"\t\t<transform>" <<endl;
+                stream<< "\t\t\t<fullTransform>"<< chain->getAttachedRobotOffset(k) << "</fullTransform>" << endl;
+                stream<<"\t\t</transform>" <<endl;
+                stream<<"\t</connection>"<<endl;
+            }
+        }
+    }
+    stream<<"\t<camera>"<<endl;
+    float px, py, pz, q1, q2, q3, q4, fd;
+    if (myIVmgr) {
+        myIVmgr->getCamera(px, py, pz, q1, q2, q3, q4, fd);
+        stream<<"\t\t<position>"<<px<<" "<<py<<" "<<pz<<"</position>"<<endl;
+        stream<<"\t\t<orientation>"<<q1<<" "<<q2<<" "<<q3<<" "<<q4<<"</orientation>"<<endl;
+        stream<<"\t\t<focalDistance>"<<fd<<"</focalDistance>"<<endl;
+    }
+    stream<<"\t</camera>"<<endl;
+    stream<<"</world>"<<endl;
+    file.close();
+    modified = false;*/
+    return SUCCESS;
+}
+
+
 /*! Imports a body which is loaded from a file. \bodyType must be a class name 
 from the Body hierarchy (e.g. "Body", "DynamicBody", etc). \a filename is
 the complete path to the file containing the body. The new body is created,

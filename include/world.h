@@ -349,6 +349,9 @@ public:
   //! Save the current state of the world to a file.
   int save(const QString &filename);
   
+  //! Save the current state of the world to a file.
+  int saveHandVox(const QString &filename);
+
   //! Creates a new body of type \a bodyType, then calls the load routine of that body
   Body *importBody(QString bodyType,QString filename);
 
