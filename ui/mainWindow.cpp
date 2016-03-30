@@ -103,6 +103,9 @@ MainWindow::MainWindow(QWidget *parent)
   QObject::connect(mUI->fileNewAction, SIGNAL(triggered()), this, SLOT(fileNew()));
   QObject::connect(mUI->fileOpenAction, SIGNAL(triggered()), this, SLOT(fileOpen()));
   QObject::connect(mUI->fileSaveAction, SIGNAL(triggered()), this, SLOT(fileSave()));
+
+  QObject::connect(mUI->fileSaveBinvoxAction, SIGNAL(triggered()), this, SLOT(fileSaveBinvox()));
+
   QObject::connect(mUI->fileSaveAsAction, SIGNAL(triggered()), this, SLOT(fileSaveAs()));
   QObject::connect(mUI->fileImportRobotAction, SIGNAL(triggered()), this, SLOT(fileImportRobot()));
   QObject::connect(mUI->fileImportObstacleAction, SIGNAL(triggered()), this, SLOT(fileImportObstacle()));
@@ -303,6 +306,26 @@ void MainWindow::fileSave()
   } else {
     graspItGUI->getIVmgr()->getWorld()->save(fileName);
   }
+}
+
+/*!
+  Try saving the world's binvox
+*/
+void MainWindow::fileSaveBinvox()
+{
+    QString fn = QFileDialog::getSaveFileName(mWindow, QString(), QString(getenv("GRASPIT")),
+                                              "GraspIt World Files (*.binvox)" );
+    if ( !fn.isEmpty() ) {
+      fileName = fn;
+      if (fileName.section('.',1).isEmpty()) {
+        fileName.append(".binvox");
+      }
+
+      graspItGUI->getIVmgr()->getWorld()->saveHandVox(fileName);
+
+    } else {
+        DBGA("Error saving binvox... you didn't name it properly...");
+    }
 }
 
 /*!
