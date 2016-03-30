@@ -127,6 +127,11 @@ GraspItGUI::~GraspItGUI()
   if (mDispatch) {
     delete mDispatch;
   }
+  QString modelRoot = QString(getenv("CGDB_MODEL_ROOT"));
+  if (modelRoot.isNull() ) {
+    std::cerr << "You've built Graspit with the CGDB enabled. Please set CGDB_MODEL_ROOT or disable CGDB." << std::endl;
+    return FAILURE;
+  }
 #endif
   delete ivmgr;
   delete mainWindow;
