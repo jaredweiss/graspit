@@ -81,6 +81,8 @@ int GraspitDBModel::loadBinvox()
 
     if (!mBinvox->read_binvox(binvoxFilename.toStdString())) {
         DBGA("Error reading [" << binvoxFilename.toStdString() << "]");
+        delete mBinvox;
+        mBinvox = NULL;
         return -1;
     }
     return 1;
