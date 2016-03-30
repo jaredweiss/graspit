@@ -498,8 +498,21 @@
      <height>24</height>
     </rect>
    </property>
-   <property name="text" >
+   <property name="text">
     <string>GWS</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="saveBinvoxButton">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>486</y>
+     <width>98</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Save .binvox</string>
    </property>
   </widget>
  </widget>

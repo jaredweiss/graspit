@@ -40,14 +40,18 @@ class GraspableBody;
 */
 class GraspitDBModel : public db_planner::Model{
 
-private:
-    Binvox* mBinvox;
-
 protected:
 	//! This is the body representation in GraspIt
     GraspableBody* mGraspableBody;
-	//! Tells us if the scene graph geometry of this object has been loaded
+
+    //! This is the voxelized representation of an object
+    Binvox* mBinvox;
+
+    //! Tells us if the scene graph geometry of this object has been loaded
 	bool mGeometryLoaded;
+
+    //! Tells us if the .binvox file associated with this object has been loaded
+    bool mBinvoxLoaded;
 
     //! Loads the geometry for this body
     virtual int loadGeometry();
@@ -64,8 +68,12 @@ public:
 	void unload();
 	//! Returns the flag that tells us if geometry has been loaded
 	bool geometryLoaded() const {return mGeometryLoaded;}
-	//! Returns the Graspable body
+    //! Returns the flag that tells us if binvox has been loaded
+    bool binvoxLoaded() const {return mBinvoxLoaded;}
+    //! Returns the Graspable body
 	GraspableBody* getGraspableBody() const { return mGraspableBody; }
+    //! Returns the Binvox
+    Binvox* getBinvox() const { return mBinvox; }
 };
 
 //! An implementation of ModelAllocator that returns new GraspitDBModel objects.

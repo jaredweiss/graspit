@@ -81,7 +81,6 @@ public slots:
 	void fileNew();
 	void fileOpen();
 	void fileSave();
-    void fileSaveBinvox();
     void fileSaveAs();
 	void fileImportRobot();
 	void fileImportObstacle();

@@ -400,10 +400,6 @@
         <addaction name="fileSaveAsAction" />
         <addaction name="fileSaveImageAction" />
         <addaction name="separator" />
-
-        <addaction name="fileSaveBinvoxAction" />
-        <addaction name="separator" />
-
         <addaction name="fileImportRobotAction" />
         <addaction name="fileImportObjectAction" />
         <addaction name="fileImportObstacleAction" />
@@ -556,22 +552,6 @@
         <string/>
       </property>
     </action>
-
-    <action name="fileSaveBinvoxAction" >
-      <property name="name" >
-        <cstring>fileSaveBinvoxAction</cstring>
-      </property>
-      <property name="iconText" >
-        <string>Save Binvox</string>
-      </property>
-      <property name="text" >
-        <string>Save Binvox...</string>
-      </property>
-      <property name="shortcut" >
-        <string/>
-      </property>
-    </action>
-
     <action name="fileExitAction" >
       <property name="name" >
         <cstring>fileExitAction</cstring>

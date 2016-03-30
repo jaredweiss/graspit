@@ -574,3 +574,160 @@ inline void DBaseDlg::deleteVectorElements(std::vector<vectorType>& v){
 	}
 	v.clear();
 }
+
+/*! Saves the current hand configuration in a binvox with dimensions
+matching the currently loaded graspable body.
+Note: This function can only be run when there is one robot (a hand)
+in the scene and only on graspable body that also must have a binvox
+member variable loaded.
+*/
+void
+DBaseDlg::saveBinvoxButton_clicked() {
+    QString fileName;
+    QString fn = QFileDialog::getSaveFileName(this, QString(), QString(getenv("GRASPIT")),
+                                              "GraspIt World Files (*.binvox)" );
+    if ( !fn.isEmpty() ) {
+      fileName = fn;
+      if (fileName.section('.',1).isEmpty()) {
+        fileName.append(".binvox");
+      }
+
+    } else {
+        DBGA("Error saving binvox... you didn't name it properly...");
+        return;
+    }
+
+
+    World *w = graspItGUI->getIVmgr()->getWorld();
+
+    if (w->getNumHands() != 1) {
+        DBGA("saveHandVox: There can only be one hand loaded in the world when exporting a binvox.");
+        return;
+    } else if (w->getNumGB() != 1) {
+        DBGA("saveHandVox: There can only be one graspable body loaded in the world when exporting a binvox.");
+        return;
+    } else if (!mCurrentLoadedModel->binvoxLoaded()) {
+        DBGA("saveHandVox: Body does not have a .binvox loaded.");
+        return;
+    } else if (mCurrentLoadedModel->getBinvox()->version != 1) {
+        DBGA("saveHandVox: Loaded .binvox is not version 1. We only support version 1 of binvox.");
+        return;
+    }
+
+    Binvox *b = mCurrentLoadedModel->getBinvox();
+
+    DBGA("Attempting to export .binvox");
+
+
+    std::ofstream binvoxOutput(fileName.toStdString().c_str(), std::ios::out | std::ios::app | std::ios::binary);
+
+    if (binvoxOutput.is_open())
+    {
+        binvoxOutput << "#binvox 1\n";
+
+        binvoxOutput << "dim " << b->depth << " " << b->height << " " << b->width << "\n";
+        binvoxOutput << "translate " << b->tx << " " << b->ty << " " << b->tz << "\n";
+        binvoxOutput << "scale " << b->scale << "\n";
+        binvoxOutput << "data\n";
+
+        // Done!
+        DBGA("saveHandVox: Done writing .binvox")
+        binvoxOutput.close();
+
+    } else {
+        QTWARNING("could not open " + fileName + "for writing");
+    }
+
+
+    /*
+
+    int i,j,k,l;
+
+    if (!file.open(QIODevice::WriteOnly)) {
+        QTWARNING("could not open " + filename + "for writing");
+        return FAILURE;
+    }
+    QTextStream stream( &file );
+    stream << "<?xml version=\"1.0\" ?>" <<endl;
+    stream << "<world>" << endl;
+    for (i=0;i<numBodies;i++) {
+        if (bodyVec[i]->isA("Body")) {
+            stream<<"\t<obstacle>"<<endl;
+            if(bodyVec[i]->getFilename()=="unspecified"){
+                stream<<"\t\t<body>"<<endl;
+                if(bodyVec[i]->saveToXml(stream)==FAILURE){
+                    QTWARNING("Failed to save body info");
+                    return FAILURE;
+                }
+                stream<<"\t\t</body>"<<endl;
+            }
+            else
+                stream<<"\t\t<filename>"<<bodyVec[i]->getFilename().latin1()<<"</filename>"<<endl;
+            stream<<"\t\t<transform>" <<endl;
+            stream<< "\t\t\t<fullTransform>"<< bodyVec[i]->getTran() << "</fullTransform>" << endl;
+            stream<<"\t\t</transform>" <<endl;
+            stream<<"\t</obstacle>"<<endl;
+        }
+        else if (bodyVec[i]->inherits("GraspableBody")) {
+            stream<<"\t<graspableBody>"<<endl;
+            if(bodyVec[i]->getFilename()=="unspecified"){
+                stream<<"\t\t<body>"<<endl;
+                if(bodyVec[i]->saveToXml(stream)==FAILURE){
+                    QTWARNING("Failed to save body info");
+                    return FAILURE;
+                }
+                stream<<"\t\t</body>"<<endl;
+            }
+            else
+                stream<<"\t\t<filename>"<<bodyVec[i]->getFilename().latin1()<<"</filename>"<<endl;
+            stream<<"\t\t<transform>" <<endl;
+            stream<< "\t\t\t<fullTransform>"<< bodyVec[i]->getTran() << "</fullTransform>" << endl;
+            stream<<"\t\t</transform>" <<endl;
+            stream<<"\t</graspableBody>"<<endl;
+        }
+    }
+
+    for (i=0;i<numRobots;i++) {
+        stream<<"\t<robot>"<<endl;
+        stream<<"\t\t<filename>"<<robotVec[i]->getFilename().latin1()<<"</filename>"<<endl;
+        stream<<"\t\t<dofValues>";
+        robotVec[i]->writeDOFVals(stream);
+        stream << "</dofValues>" << endl;
+        stream<<"\t\t<transform>" <<endl;
+        stream<< "\t\t\t<fullTransform>"<< robotVec[i]->getTran() << "</fullTransform>" << endl;
+        stream<<"\t\t</transform>" <<endl;
+        stream<<"\t</robot>"<<endl;
+    }
+
+    for(i=0;i<numRobots;i++) {
+        for (j=0;j<robotVec[i]->getNumChains();j++) {
+            KinematicChain *chain = robotVec[i]->getChain(j);
+            for (k=0;k<chain->getNumAttachedRobots();k++) {
+                stream<<"\t<connection>"<<endl;
+                stream<< "\t\t<parentRobot>" << i << "</parentRobot>" << endl;
+                stream<< "\t\t<parentChain>" << j << "</parentChain>" << endl;
+                for (l=0;l<numRobots;l++)
+                    if (chain->getAttachedRobot(k) == robotVec[l]) break;
+                stream<< "\t\t<childRobot>" << l << "</childRobot>" << endl;
+                if (chain->getAttachedRobot(k)->getMountPiece()) {
+                    stream<< "\t\t<mountFilename>" << chain->getAttachedRobot(k)->getMountPiece()->getFilename() << "</mountFilename>" << endl;
+                }
+                stream<<"\t\t<transform>" <<endl;
+                stream<< "\t\t\t<fullTransform>"<< chain->getAttachedRobotOffset(k) << "</fullTransform>" << endl;
+                stream<<"\t\t</transform>" <<endl;
+                stream<<"\t</connection>"<<endl;
+            }
+        }
+    }
+    stream<<"\t<camera>"<<endl;
+    float px, py, pz, q1, q2, q3, q4, fd;
+    if (myIVmgr) {
+        myIVmgr->getCamera(px, py, pz, q1, q2, q3, q4, fd);
+        stream<<"\t\t<position>"<<px<<" "<<py<<" "<<pz<<"</position>"<<endl;
+        stream<<"\t\t<orientation>"<<q1<<" "<<q2<<" "<<q3<<" "<<q4<<"</orientation>"<<endl;
+        stream<<"\t\t<focalDistance>"<<fd<<"</focalDistance>"<<endl;
+    }
+    stream<<"\t</camera>"<<endl;
+    stream<<"</world>"<<endl;*/
+}
+

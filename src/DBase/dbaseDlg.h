@@ -115,6 +115,8 @@ public:
 		QObject::connect(showPreGraspRadioButton, SIGNAL(toggled(bool)), this, SLOT(graspTypeChanged()));
 		QObject::connect(showFinalGraspRadioButton, SIGNAL(toggled(bool)), this, SLOT(graspTypeChanged()));
 
+        QObject::connect(saveBinvoxButton, SIGNAL(toggled(bool)), this, SLOT(saveBinvoxButton_clicked()));
+
 		init();
 	}
 	~DBaseDlg(){destroy();}
@@ -135,5 +137,7 @@ public slots:
 	void modelChanged();
 	void graspTypeChanged();
 	void classChanged();
+
+    void saveBinvoxButton_clicked();
 };
 #endif
