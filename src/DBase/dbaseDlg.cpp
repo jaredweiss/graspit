@@ -628,7 +628,33 @@ DBaseDlg::saveBinvoxButton_clicked() {
         binvoxOutput << "dim " << b->depth << " " << b->height << " " << b->width << "\n";
         binvoxOutput << "translate " << b->tx << " " << b->ty << " " << b->tz << "\n";
         binvoxOutput << "scale " << b->scale << "\n";
+
+        // Figure out where the contacts are
+        std::list<Contact*> handContacts =w->getHand(0)->getContacts();
+        DBGA("Hand will have " << handContacts.size() << " contacts.");
+
+        std::vector<std::vector<double> > contactLocs;
+        double pos[3];
+        for(std::list<Contact*>::iterator it = handContacts.begin(); it != handContacts.end(); it++) {
+            Contact *c = *it;
+            c->getPosition().get(pos);
+            std::vector<double> posVec;
+            posVec.push_back(pos[0]);
+            posVec.push_back(pos[1]);
+            posVec.push_back(pos[2]);
+            contactLocs.push_back(posVec);
+        }
+        // Sort the vector by z,y,x now so when we output the locations, they're in order
+        struct contactComparator {
+            static bool compare(std::vector<double> pos1, std::vector<double> pos2) {
+                return pos1[2] > pos2[2]; // sort z by greatest to least
+            }
+        };
+
+        std::sort(contactLocs.begin(), contactLocs.end(), contactComparator::compare);
+
         binvoxOutput << "data\n";
+
 
         // Done!
         DBGA("saveHandVox: Done writing .binvox")
