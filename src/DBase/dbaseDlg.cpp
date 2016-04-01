@@ -619,7 +619,7 @@ DBaseDlg::saveBinvoxButton_clicked() {
     DBGA("Attempting to export .binvox");
 
 
-    std::ofstream binvoxOutput(fileName.toStdString().c_str(), std::ios::out | std::ios::app | std::ios::binary);
+    std::ofstream binvoxOutput(fileName.toStdString().c_str(), std::ios::out | std::ios::binary);
 
     if (binvoxOutput.is_open())
     {
@@ -629,32 +629,135 @@ DBaseDlg::saveBinvoxButton_clicked() {
         binvoxOutput << "translate " << b->tx << " " << b->ty << " " << b->tz << "\n";
         binvoxOutput << "scale " << b->scale << "\n";
 
+        // Comparator for sorting contacts + virtual contacts
+        struct contactComparator {
+            static bool compare(vec3 v1, vec3 v2) {
+                // sort x then z then y least to greatest
+                if (v1.x() == v2.x()) {
+                    if (v1.z() == v2.z()) {
+                        return v1.y() < v2.y();
+                    } else {
+                        return v1.z() < v2.z();
+                    }
+                } else {
+                    return v1.x() < v2.x();
+                }
+            }
+        };
+
+        /*
         // Figure out where the contacts are
         std::list<Contact*> handContacts =w->getHand(0)->getContacts();
         DBGA("Hand will have " << handContacts.size() << " contacts.");
 
         std::vector<std::vector<double> > contactLocs;
-        double pos[3];
+        double contactPos[3];
         for(std::list<Contact*>::iterator it = handContacts.begin(); it != handContacts.end(); it++) {
             Contact *c = *it;
-            c->getPosition().get(pos);
+            c->getPosition().get(contactPos);
             std::vector<double> posVec;
-            posVec.push_back(pos[0]);
-            posVec.push_back(pos[1]);
-            posVec.push_back(pos[2]);
+            posVec.push_back(contactPos[0]);
+            posVec.push_back(contactPos[1]);
+            posVec.push_back(contactPos[2]);
             contactLocs.push_back(posVec);
         }
+        // Put the contact positions in object frame of reference
+        // TODO!
+
         // Sort the vector by z,y,x now so when we output the locations, they're in order
-        struct contactComparator {
-            static bool compare(std::vector<double> pos1, std::vector<double> pos2) {
-                return pos1[2] > pos2[2]; // sort z by greatest to least
-            }
-        };
-
         std::sort(contactLocs.begin(), contactLocs.end(), contactComparator::compare);
+        */
 
+        // Get virtual contacts and dump to binvox
+
+        transf bodyInWorld = w->getGB(0)->getTran();
+        w->getHand(0)->getGrasp()->collectVirtualContacts();
+        VirtualContact *vc;
+        double vcPos[3];
+        std::vector<vec3> vcLocs;
+        for (int i=0; i<w->getHand(0)->getGrasp()->getNumContacts(); i++) {
+            vc = (VirtualContact*)w->getHand(0)->getGrasp()->getContact(i);
+            vc->getWorldLocation().get(vcPos);
+            transf contactInWorld(Quaternion::IDENTITY, vec3(vcPos));
+            transf contactInBody = contactInWorld * bodyInWorld.inverse();
+            vcLocs.push_back(contactInBody.translation());
+            //Body * tempBody = w->importBody("Body","/home/jalapeno/curg/graspits/graspit/models/objects/sphere.xml");
+            //tempBody->setTran(contactInBody);
+        }
+        std::sort(vcLocs.begin(), vcLocs.end(), contactComparator::compare);
+
+
+        // Actually write to the binvox
         binvoxOutput << "data\n";
 
+
+        int y, z, x;
+        double nym, nyM, nzm, nzM, nxm, nxM; // min and max dims of each binvox point
+        int currentVCIndex = 0;
+        vec3 currentVC = vcLocs.at(currentVCIndex);
+        vec3 *currentVCScaled = new vec3(currentVC.x() / b->scale / 1000 + b->tx,
+                                         currentVC.y() / b->scale / 1000 + b->ty,
+                                         currentVC.z() / b->scale / 1000 + b->tz);
+        bool value = 0;
+        int count = 0;
+        for (int i=0; i<b->size; i++){
+            // int index = x * wxh + z * width + y;  // wxh = width * height = d * d
+            // from http://www.cs.princeton.edu/~min/binvox/binvox.html
+            // note: this might not work if w,h,d aren't all =
+            x = i / b->width / b->height;
+            z = (i % (b->width * b->height)) / b->depth;
+            y = (i % (b->width * b->height)) % b->depth;
+
+            //binvox normalizes coords to fit inside a 1.0x1.0x1.0 cube
+            nym = (double)y / (double)b->depth;
+            nzm = (double)z / (double)b->height;
+            nxm = (double)x / (double)b->width;
+
+            nyM = nym + (1.0 / (double)b->depth);
+            nzM = nzm + (1.0 / (double)b->height);
+            nxM = nxm + (1.0 / (double)b->width);
+
+            if ( (currentVCIndex < vcLocs.size()) &&
+                 (nym < currentVCScaled->y() < nyM) &&
+                 (nzm < currentVCScaled->z() < nzM) &&
+                 (nxm < currentVCScaled->x() < nxM) ) {
+
+                if (value) {
+                    count++; //there should never be 255 contacts so don't worry about count being too high
+                } else if (!value) {
+                    binvoxOutput << (int)0 << (int)count;
+                    value = 1;
+                    count = 1;
+                }
+                DBGA("currentVCIndex: " << currentVCIndex);
+
+                delete currentVCScaled;
+                currentVCIndex++;
+                if (currentVCIndex == vcLocs.size())
+                    continue;
+
+                currentVC = vcLocs.at(currentVCIndex);
+                currentVCScaled = new vec3(currentVC.x() / b->scale / 1000 + b->tx,
+                                           currentVC.y() / b->scale / 1000 + b->ty,
+                                           currentVC.z() / b->scale / 1000 + b->tz);
+            } else if (value) {
+                DBGA("reseting value to 0, writing '1," << count << "'");
+                value = 0;
+                binvoxOutput << (int)1 << (int)count;
+                count = 1;
+            } else if ((!value) && (count < 255)) {
+                count++;
+            } else if ((!value) && (count == 255)) {
+                count = 1;
+                binvoxOutput << (int)0 << (int)255;
+            }
+        }
+        // remaining count
+        if (!value) {
+            binvoxOutput << (int)0 << (int)count;
+        } else {
+            binvoxOutput << (int)1 << (int)count;
+        }
 
         // Done!
         DBGA("saveHandVox: Done writing .binvox")
@@ -663,97 +766,5 @@ DBaseDlg::saveBinvoxButton_clicked() {
     } else {
         QTWARNING("could not open " + fileName + "for writing");
     }
-
-
-    /*
-
-    int i,j,k,l;
-
-    if (!file.open(QIODevice::WriteOnly)) {
-        QTWARNING("could not open " + filename + "for writing");
-        return FAILURE;
-    }
-    QTextStream stream( &file );
-    stream << "<?xml version=\"1.0\" ?>" <<endl;
-    stream << "<world>" << endl;
-    for (i=0;i<numBodies;i++) {
-        if (bodyVec[i]->isA("Body")) {
-            stream<<"\t<obstacle>"<<endl;
-            if(bodyVec[i]->getFilename()=="unspecified"){
-                stream<<"\t\t<body>"<<endl;
-                if(bodyVec[i]->saveToXml(stream)==FAILURE){
-                    QTWARNING("Failed to save body info");
-                    return FAILURE;
-                }
-                stream<<"\t\t</body>"<<endl;
-            }
-            else
-                stream<<"\t\t<filename>"<<bodyVec[i]->getFilename().latin1()<<"</filename>"<<endl;
-            stream<<"\t\t<transform>" <<endl;
-            stream<< "\t\t\t<fullTransform>"<< bodyVec[i]->getTran() << "</fullTransform>" << endl;
-            stream<<"\t\t</transform>" <<endl;
-            stream<<"\t</obstacle>"<<endl;
-        }
-        else if (bodyVec[i]->inherits("GraspableBody")) {
-            stream<<"\t<graspableBody>"<<endl;
-            if(bodyVec[i]->getFilename()=="unspecified"){
-                stream<<"\t\t<body>"<<endl;
-                if(bodyVec[i]->saveToXml(stream)==FAILURE){
-                    QTWARNING("Failed to save body info");
-                    return FAILURE;
-                }
-                stream<<"\t\t</body>"<<endl;
-            }
-            else
-                stream<<"\t\t<filename>"<<bodyVec[i]->getFilename().latin1()<<"</filename>"<<endl;
-            stream<<"\t\t<transform>" <<endl;
-            stream<< "\t\t\t<fullTransform>"<< bodyVec[i]->getTran() << "</fullTransform>" << endl;
-            stream<<"\t\t</transform>" <<endl;
-            stream<<"\t</graspableBody>"<<endl;
-        }
-    }
-
-    for (i=0;i<numRobots;i++) {
-        stream<<"\t<robot>"<<endl;
-        stream<<"\t\t<filename>"<<robotVec[i]->getFilename().latin1()<<"</filename>"<<endl;
-        stream<<"\t\t<dofValues>";
-        robotVec[i]->writeDOFVals(stream);
-        stream << "</dofValues>" << endl;
-        stream<<"\t\t<transform>" <<endl;
-        stream<< "\t\t\t<fullTransform>"<< robotVec[i]->getTran() << "</fullTransform>" << endl;
-        stream<<"\t\t</transform>" <<endl;
-        stream<<"\t</robot>"<<endl;
-    }
-
-    for(i=0;i<numRobots;i++) {
-        for (j=0;j<robotVec[i]->getNumChains();j++) {
-            KinematicChain *chain = robotVec[i]->getChain(j);
-            for (k=0;k<chain->getNumAttachedRobots();k++) {
-                stream<<"\t<connection>"<<endl;
-                stream<< "\t\t<parentRobot>" << i << "</parentRobot>" << endl;
-                stream<< "\t\t<parentChain>" << j << "</parentChain>" << endl;
-                for (l=0;l<numRobots;l++)
-                    if (chain->getAttachedRobot(k) == robotVec[l]) break;
-                stream<< "\t\t<childRobot>" << l << "</childRobot>" << endl;
-                if (chain->getAttachedRobot(k)->getMountPiece()) {
-                    stream<< "\t\t<mountFilename>" << chain->getAttachedRobot(k)->getMountPiece()->getFilename() << "</mountFilename>" << endl;
-                }
-                stream<<"\t\t<transform>" <<endl;
-                stream<< "\t\t\t<fullTransform>"<< chain->getAttachedRobotOffset(k) << "</fullTransform>" << endl;
-                stream<<"\t\t</transform>" <<endl;
-                stream<<"\t</connection>"<<endl;
-            }
-        }
-    }
-    stream<<"\t<camera>"<<endl;
-    float px, py, pz, q1, q2, q3, q4, fd;
-    if (myIVmgr) {
-        myIVmgr->getCamera(px, py, pz, q1, q2, q3, q4, fd);
-        stream<<"\t\t<position>"<<px<<" "<<py<<" "<<pz<<"</position>"<<endl;
-        stream<<"\t\t<orientation>"<<q1<<" "<<q2<<" "<<q3<<" "<<q4<<"</orientation>"<<endl;
-        stream<<"\t\t<focalDistance>"<<fd<<"</focalDistance>"<<endl;
-    }
-    stream<<"\t</camera>"<<endl;
-    stream<<"</world>"<<endl;*/
 }
 
