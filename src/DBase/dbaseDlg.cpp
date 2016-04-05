@@ -725,7 +725,7 @@ DBaseDlg::saveBinvoxButton_clicked() {
                 if (value) {
                     count++; //there should never be 255 contacts so don't worry about count being too high
                 } else if (!value) {
-                    binvoxOutput << (int)0 << (int)count;
+                    binvoxOutput << (unsigned char)0 << (unsigned char)count;
                     value = 1;
                     count = 1;
                 }
@@ -743,20 +743,20 @@ DBaseDlg::saveBinvoxButton_clicked() {
             } else if (value) {
                 DBGA("reseting value to 0, writing '1," << count << "'");
                 value = 0;
-                binvoxOutput << (int)1 << (int)count;
+                binvoxOutput << (unsigned char)1 << (unsigned char)count;
                 count = 1;
             } else if ((!value) && (count < 255)) {
                 count++;
             } else if ((!value) && (count == 255)) {
                 count = 1;
-                binvoxOutput << (int)0 << (int)255;
+                binvoxOutput << (unsigned char)0 << (unsigned char)255;
             }
         }
         // remaining count
         if (!value) {
-            binvoxOutput << (int)0 << (int)count;
+            binvoxOutput << (unsigned char)0 << (unsigned char)count;
         } else {
-            binvoxOutput << (int)1 << (int)count;
+            binvoxOutput << (unsigned char)1 << (unsigned char)count;
         }
 
         // Done!
