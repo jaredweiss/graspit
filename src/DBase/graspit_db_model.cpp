@@ -117,6 +117,8 @@ int GraspitDBModel::load(World* w)
         DBGA("GraspitDBModel: No .binvox file found for current model");
     } else if (loadBinvoxResult == 0) {
         DBGA("GraspitDBModel: Error parsing .binvox file for current model");
+    } else {
+        mBinvoxLoaded = true;
     }
 
 	mGeometryLoaded = true;
