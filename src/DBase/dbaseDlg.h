@@ -139,5 +139,8 @@ public slots:
 	void classChanged();
 
     void saveBinvoxButton_clicked();
+    void saveBinvoxOfVCs(QString fileName);
+    void saveBinvoxFromVoxVec(QString fileName, std::vector<bool> *voxVec);
+
 };
 #endif
