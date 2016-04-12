@@ -59,7 +59,6 @@
 //#define GRASPITDBG
 #include "debug.h"
 
-
 /*! Initializes the dialog and also gets the one and only manager from the
 	GraspitGUI. If this manager is already set, it also loads the model 
 	list from the database and initializes it.
@@ -643,31 +642,19 @@ DBaseDlg::saveBinvoxFromVoxVec(QString fileName, std::vector<bool> *voxVec) {
 }
 
 void
-DBaseDlg::saveBinvoxOfVCs(QString fileName) {
-    World *w = graspItGUI->getIVmgr()->getWorld();
-
+DBaseDlg::saveBinvoxOfContacts(QString fileName, std::vector<vec3> contactLocs) {
     Binvox *b = mCurrentLoadedModel->getBinvox();
-
-    // we get contact points from either the object or from the hand. Getting from the hand seems better from visualization
-//    std::vector<vec3> vcLocs = getContactPointsLocationsFromObject();
-    std::vector<vec3> vcLocs = getContactPointsLocationsFromHand();
-
+    double dbModelRescale = mCurrentLoadedModel->RescaleFactor();
 
     //  Dump contacts to binvox
-
-    double dbModelRescale =mCurrentLoadedModel->RescaleFactor();
     std::vector<bool> voxVec;
     int y, z, x;
     double nym, nyM, nzm, nzM, nxm, nxM; // min and max dims of each binvox point
-    int currentVCIndex = 0;
-    vec3 currentVC = vcLocs.at(currentVCIndex);
-    //    vec3 *currentVCScaled = new vec3((currentVC.x()/dbModelRescale - b->tx) * b->scale,
-    //                                     (currentVC.y()/dbModelRescale - b->ty) * b->scale,
-    //                                     (currentVC.z()/dbModelRescale - b->tz) * b->scale);
-
-    vec3 *currentVCScaled = new vec3((currentVC.x()/dbModelRescale + b->tx) * b->scale,
-                                     (currentVC.y()/dbModelRescale + b->ty) * b->scale,
-                                     (currentVC.z()/dbModelRescale + b->tz) * b->scale);
+    int currentContactIndex = 0;
+    vec3 currentContact = contactLocs.at(currentContactIndex);
+    vec3 *currentContactScaled = new vec3((currentContact.x()/dbModelRescale + b->tx) * b->scale,
+                                          (currentContact.y()/dbModelRescale + b->ty) * b->scale,
+                                          (currentContact.z()/dbModelRescale + b->tz) * b->scale);
     for (int i=0; i < b->size; i++){
         // int index = x * wxh + z * width + y;  // wxh = width * height = d * d
         // from http://www.cs.princeton.edu/~min/binvox/binvox.html
@@ -685,32 +672,23 @@ DBaseDlg::saveBinvoxOfVCs(QString fileName) {
         nzM = nzm + (1.0 / (double)b->height);
         nxM = nxm + (1.0 / (double)b->width);
 
-        if ( (currentVCIndex < vcLocs.size()) &&
-             ((nym < currentVCScaled->y()) && (currentVCScaled->y() < nyM)) &&
-             ((nzm < currentVCScaled->z()) && (currentVCScaled->z() < nzM)) &&
-             ((nxm < currentVCScaled->x()) && (currentVCScaled->x() < nxM)) ) {
-
-//        if ( (currentVCIndex < vcLocs.size()) &&
-//             (nym < currentVCScaled->y() < nyM) &&
-//             (nzm < currentVCScaled->z() < nzM) &&
-//             (nxm < currentVCScaled->x() < nxM) ) {
+        if ( (currentContactIndex < contactLocs.size()) &&
+             ((nym < currentContactScaled->y()) && (currentContactScaled->y() < nyM)) &&
+             ((nzm < currentContactScaled->z()) && (currentContactScaled->z() < nzM)) &&
+             ((nxm < currentContactScaled->x()) && (currentContactScaled->x() < nxM)) ) {
 
             voxVec.push_back(1);
 
-            delete currentVCScaled;
-            currentVCIndex++;
-            if (currentVCIndex == vcLocs.size()) {
+            delete currentContactScaled;
+            currentContactIndex++;
+            if (currentContactIndex == contactLocs.size()) {
                 continue;
             }
 
-            currentVC = vcLocs.at(currentVCIndex);
-//            currentVCScaled = new vec3((currentVC.x()/dbModelRescale - b->tx) * b->scale,
-//                                       (currentVC.y()/dbModelRescale - b->ty) * b->scale,
-//                                       (currentVC.z()/dbModelRescale - b->tz) * b->scale);
-            currentVCScaled = new vec3((currentVC.x()/dbModelRescale + b->tx) * b->scale,
-                                       (currentVC.y()/dbModelRescale + b->ty) * b->scale,
-                                       (currentVC.z()/dbModelRescale + b->tz) * b->scale);
-
+            currentContact = contactLocs.at(currentContactIndex);
+            currentContactScaled = new vec3((currentContact.x()/dbModelRescale + b->tx) * b->scale,
+                                            (currentContact.y()/dbModelRescale + b->ty) * b->scale,
+                                            (currentContact.z()/dbModelRescale + b->tz) * b->scale);
 
 
         } else {
@@ -730,7 +708,6 @@ std::vector<vec3>
 DBaseDlg::getContactPointsLocationsFromHand() {
 
     World *w = graspItGUI->getIVmgr()->getWorld();
-    Binvox *b = mCurrentLoadedModel->getBinvox();
 
     // Get contacts
     transf bodyInWorld = w->getGB(0)->getTran();
@@ -741,17 +718,49 @@ DBaseDlg::getContactPointsLocationsFromHand() {
     for (int i=0; i<w->getHand(0)->getGrasp()->getNumContacts(); i++) {
         Contact *c = w->getHand(0)->getGrasp()->getContact(i);
         c->getLocation().get(cPos);
+        assert(false);
+        // Need to use getWorldLocation otherwise you're just
+        // returning the location in the frame of ref in the world
+        // and the following transformation doesn't do anything
         transf contactInWorld(Quaternion::IDENTITY, vec3(cPos));
         transf contactInBody = bodyInWorld.inverse() * contactInWorld;
         contactLocations.push_back(contactInBody.translation());
-////         Uncomment the following lines to see the placement of contacts as spheres in the scene
-//         Body * tempBody = w->importBody("Body","/home/iakinola/graspit/models/objects/sphere.xml");
-//         tempBody->setTran(contactInBody);
+        // Uncomment the following lines to see the placement of contacts as spheres in the scene
+        //Body * tempBody = w->importBody("Body","/home/iakinola/graspit/models/objects/sphere.xml");
+        //tempBody->setTran(contactInBody);
     }
     std::sort(contactLocations.begin(), contactLocations.end(), contactComparator::compare);
     return contactLocations;
 }
 
+
+
+/*! Gets the current virtual contact point location of the fingers on the object.
+ * Return the list of the locations in the object's frame of refrence
+*/
+std::vector<vec3>
+DBaseDlg::getVirtualContactPointsLocationsFromHand() {
+
+    World *w = graspItGUI->getIVmgr()->getWorld();
+
+    transf bodyInWorld = w->getGB(0)->getTran();
+    w->getHand(0)->getGrasp()->collectVirtualContacts();
+    VirtualContact *vc;
+    double vcPos[3];
+    std::vector<vec3> vcLocations;
+    for (int i=0; i<w->getHand(0)->getGrasp()->getNumContacts(); i++) {
+        vc = (VirtualContact*)w->getHand(0)->getGrasp()->getContact(i);
+        vc->getWorldLocation().get(vcPos);
+        transf contactInWorld(Quaternion::IDENTITY, vec3(vcPos));
+        transf contactInBody = bodyInWorld.inverse() * contactInWorld;
+        vcLocations.push_back(contactInBody.translation());
+        // Uncomment the following lines to see the placement of contacts as spheres in the scene
+        //Body * tempBody = w->importBody("Body","/home/iakinola/graspit/models/objects/sphere.xml");
+        //tempBody->setTran(contactInBody);
+    }
+    std::sort(vcLocations.begin(), vcLocations.end(), contactComparator::compare);
+    return vcLocations;
+}
 
 
 
@@ -762,7 +771,6 @@ std::vector<vec3>
 DBaseDlg::getContactPointsLocationsFromObject() {
 
     World *w = graspItGUI->getIVmgr()->getWorld();
-    Binvox *b = mCurrentLoadedModel->getBinvox();
 
     // this portion deals directly with the object.
     w->getHand(0)->getGrasp()->collectContacts();
@@ -778,10 +786,10 @@ DBaseDlg::getContactPointsLocationsFromObject() {
             contactLocations.push_back(vec3 (vcPos));
 
             DBGA("Contact location-- x: " << vcPos[0] << ", y: " << vcPos[1] << ", z: " << vcPos[2] << " contacts in contactList.... Ireti debugging");
-    //         Uncomment the following lines to see the placement of contacts as spheres in the scene
-             Body * tempBody = w->importBody("Body","/home/iakinola/graspit/models/objects/sphere.xml");
-             transf contactTran(Quaternion::IDENTITY, vcPos);
-             tempBody->setTran(contactTran);
+            //Uncomment the following lines to see the placement of contacts as spheres in the scene
+            //Body * tempBody = w->importBody("Body","/home/iakinola/graspit/models/objects/sphere.xml");
+            //transf contactTran(Quaternion::IDENTITY, vcPos);
+            //tempBody->setTran(contactTran);
     }
     std::sort(contactLocations.begin(), contactLocations.end(), contactComparator::compare);
     return contactLocations;
@@ -816,7 +824,7 @@ DBaseDlg::saveBinvoxButton_clicked() {
 
     QString fileName ="";
     QString fn = QFileDialog::getSaveFileName(this, QString(), QString(getenv("GRASPIT")),
-                                              "GraspIt World Files (*.binvox)" );
+                                              "Binvox Files (*.binvox)" );
     if ( !fn.isEmpty() ) {
       fileName = fn;
       if (fileName.section('.',1).isEmpty()) {
@@ -828,6 +836,61 @@ DBaseDlg::saveBinvoxButton_clicked() {
         return;
     }
 
-    saveBinvoxOfVCs(fileName);
+    saveBinvoxOfContacts(fileName, getVirtualContactPointsLocationsFromHand());
 }
 
+
+/*! Saved .binvox representations for all grasps in the
+CGDB (for current category). Uses only objects where scale=1.0 in order to preserve
+the transformation between the fingertips and the object (since we only
+have the voxelized representation at scale 1.0)
+*/
+void
+DBaseDlg::runBatchBinvoxButton_clicked() {
+
+    for (int i=0; i < modelsComboBox->count(); i++) {
+        // load the model
+        modelsComboBox->setCurrentIndex(i);
+        if (modelsComboBox->currentText().toStdString().substr(4,3) == "1.0") {
+            DBGA("current object: " << modelsComboBox->currentText().toStdString());
+        } else {
+            continue; // skip this model if it's not at the right scale...
+        }
+
+        loadModelButton_clicked();
+
+        // load the (EIGENGRASPS) grasps
+        for (int t=0; t<typesComboBox->count(); t++) {
+            typesComboBox->setCurrentIndex(t);
+            if (typesComboBox->currentText().toStdString() == "EIGENGRASPS")
+                break;
+        }
+        loadGraspButton_clicked();
+
+        for (int g=0; g<mGraspList.size(); g++) {
+            QString path(QString(getenv("GRASPIT")) + QString("/binvoxes/") + QString(modelsComboBox->currentText()));
+            QDir dir(path.toStdString().c_str());
+            if (!dir.exists())
+                dir.mkpath(".");
+
+            QString vcFilename(path + QString("/") + QString::number(g+1) + QString("_vc"));
+            QString binvoxVCFilename(vcFilename + QString(".binvox"));
+            QString qualityVCFilename(vcFilename + QString(".quality"));
+            //saveBinvoxOfContacts(binvoxCFilename, getContactPointsLocationsFromHand());
+            saveBinvoxOfContacts(binvoxVCFilename, getVirtualContactPointsLocationsFromHand());
+
+            // also save the energy!
+            std::ofstream qualityOutput(qualityVCFilename.toStdString().c_str(), std::ios::out | std::ios::binary);
+
+            if (qualityOutput.is_open())
+            {
+                qualityOutput << "epsilon_quality=" << mGraspList[g]->EpsilonQuality() << "\n";
+                qualityOutput << "volume_quality=" << mGraspList[g]->VolumeQuality() << "\n";
+                qualityOutput.close();
+            } else {
+                QTWARNING("could not open " + qualityVCFilename + "for writing");
+            }
+            nextGraspButton_clicked(); //use this button to load the next grasp to save
+        }
+    }
+}

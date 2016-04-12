@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>465</width>
-    <height>531</height>
+    <height>597</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -507,13 +507,39 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>486</y>
+     <y>550</y>
      <width>98</width>
      <height>31</height>
     </rect>
    </property>
    <property name="text">
     <string>Save .binvox</string>
+   </property>
+  </widget>
+  <widget class="Line" name="line">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>530</y>
+     <width>441</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="runBatchBinvoxButton">
+   <property name="geometry">
+    <rect>
+     <x>190</x>
+     <y>550</y>
+     <width>231</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Create .binvox for all grasps</string>
    </property>
   </widget>
  </widget>

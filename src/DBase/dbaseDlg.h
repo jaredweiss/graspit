@@ -95,9 +95,10 @@ private:
 	//! Helper function that sets grasp's information texts to default
 	void initializeGraspInfo();
 
-    void saveBinvoxOfVCs(QString fileName);
+    void saveBinvoxOfContacts(QString fileName, std::vector<vec3> contactLocs);
     std::vector<vec3> getContactPointsLocationsFromObject();
     std::vector<vec3> getContactPointsLocationsFromHand();
+    std::vector<vec3> getVirtualContactPointsLocationsFromHand();
 
 
 public:
@@ -122,6 +123,7 @@ public:
 		QObject::connect(showFinalGraspRadioButton, SIGNAL(toggled(bool)), this, SLOT(graspTypeChanged()));
 
         QObject::connect(saveBinvoxButton, SIGNAL(clicked()), this, SLOT(saveBinvoxButton_clicked()));
+        QObject::connect(runBatchBinvoxButton, SIGNAL(clicked()), this, SLOT(runBatchBinvoxButton_clicked()));
 
 		init();
 	}
@@ -146,6 +148,7 @@ public slots:
 
     void saveBinvoxButton_clicked();
     void saveBinvoxFromVoxVec(QString fileName, std::vector<bool> *voxVec);
+    void runBatchBinvoxButton_clicked();
 
 };
 #endif
