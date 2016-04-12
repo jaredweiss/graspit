@@ -33,6 +33,7 @@
 #include "ui_dbaseDlg.h"
 #include <map>
 #include <QDialog>
+#include "matvec3D.h"
 
 class GraspitDBGrasp;
 class GraspitDBModel;
@@ -94,6 +95,11 @@ private:
 	//! Helper function that sets grasp's information texts to default
 	void initializeGraspInfo();
 
+    void saveBinvoxOfVCs(QString fileName);
+    std::vector<vec3> getContactPointsLocationsFromObject();
+    std::vector<vec3> getContactPointsLocationsFromHand();
+
+
 public:
 	DBaseDlg(QWidget *parent = 0) : QDialog(parent), mCurrentLoadedModel(NULL), mDBMgr(NULL), 
 									mModelScene(NULL), mCurrentFrame(0), 
@@ -139,7 +145,6 @@ public slots:
 	void classChanged();
 
     void saveBinvoxButton_clicked();
-    void saveBinvoxOfVCs(QString fileName);
     void saveBinvoxFromVoxVec(QString fileName, std::vector<bool> *voxVec);
 
 };
