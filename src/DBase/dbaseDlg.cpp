@@ -848,49 +848,79 @@ have the voxelized representation at scale 1.0)
 void
 DBaseDlg::runBatchBinvoxButton_clicked() {
 
-    for (int i=0; i < modelsComboBox->count(); i++) {
-        // load the model
-        modelsComboBox->setCurrentIndex(i);
-        if (modelsComboBox->currentText().toStdString().substr(4,3) == "1.0") {
-            DBGA("current object: " << modelsComboBox->currentText().toStdString());
-        } else {
-            continue; // skip this model if it's not at the right scale...
-        }
+    DBGA("There are  " << classesComboBox->count() << " categories in database.... Ireti debugging");
 
-        loadModelButton_clicked();
+    for (int cat=0; cat < classesComboBox->count(); cat++) {
+        // set category
+        classesComboBox->setCurrentIndex(cat);
+        DBGA("Currently treating category:  " << cat << "  of  "<< classesComboBox->count() <<"   "<< classesComboBox->currentText().toStdString() << " categories in database.... Ireti debugging");
 
-        // load the (EIGENGRASPS) grasps
-        for (int t=0; t<typesComboBox->count(); t++) {
-            typesComboBox->setCurrentIndex(t);
-            if (typesComboBox->currentText().toStdString() == "EIGENGRASPS")
-                break;
-        }
-        loadGraspButton_clicked();
+        for (int i=0; i < modelsComboBox->count(); i++) {
+            // load the model
+            modelsComboBox->setCurrentIndex(i);
+            if (modelsComboBox->currentText().toStdString().substr(4,3) == "1.0") {
+                DBGA("current object: " << modelsComboBox->currentText().toStdString());
+            } else {
+                continue; // skip this model if it's not at the right scale...
+            }
 
-        for (int g=0; g<mGraspList.size(); g++) {
+            loadModelButton_clicked();
+
+            // load the (EIGENGRASPS) grasps
+            for (int t=0; t<typesComboBox->count(); t++) {
+                typesComboBox->setCurrentIndex(t);
+                if (typesComboBox->currentText().toStdString() == "EIGENGRASPS")
+                    break;
+            }
+            loadGraspButton_clicked();
+
+
+            // create directory to save the files corresponding to the current model.
             QString path(QString(getenv("GRASPIT")) + QString("/binvoxes/") + QString(modelsComboBox->currentText()));
             QDir dir(path.toStdString().c_str());
             if (!dir.exists())
                 dir.mkpath(".");
 
-            QString vcFilename(path + QString("/") + QString::number(g+1) + QString("_vc"));
-            QString binvoxVCFilename(vcFilename + QString(".binvox"));
-            QString qualityVCFilename(vcFilename + QString(".quality"));
-            //saveBinvoxOfContacts(binvoxCFilename, getContactPointsLocationsFromHand());
-            saveBinvoxOfContacts(binvoxVCFilename, getVirtualContactPointsLocationsFromHand());
+            // store location of the original binvox location
+            QString binvoxLocFilename(path + QString("/") + path.section('/',-1,-1) + QString(".location"));
+            QString binvoxLocation = QString(mCurrentLoadedModel->GeometryPath().c_str());
+            binvoxLocation = binvoxLocation.left(binvoxLocation.findRev('.')) +".binvox";
 
-            // also save the energy!
-            std::ofstream qualityOutput(qualityVCFilename.toStdString().c_str(), std::ios::out | std::ios::binary);
+            DBGA(" binvoxLocation " << binvoxLocation.toStdString()<< " .... Ireti debugging");
+            DBGA("binvoxLocFilename " << binvoxLocFilename.toStdString()<< " .... Ireti debugging");
 
-            if (qualityOutput.is_open())
+            std::ofstream binvoxLocFileOutput(binvoxLocFilename.toStdString().c_str(), std::ios::out | std::ios::binary);
+            if (binvoxLocFileOutput.is_open())
             {
-                qualityOutput << "epsilon_quality=" << mGraspList[g]->EpsilonQuality() << "\n";
-                qualityOutput << "volume_quality=" << mGraspList[g]->VolumeQuality() << "\n";
-                qualityOutput.close();
+                binvoxLocFileOutput << binvoxLocation.toStdString() << "\n";
             } else {
-                QTWARNING("could not open " + qualityVCFilename + "for writing");
+                QTWARNING("could not open " + binvoxLocFilename + "for writing");
             }
-            nextGraspButton_clicked(); //use this button to load the next grasp to save
+            binvoxLocFileOutput.close();
+
+            // go through the grasps for this model and save
+            for (int g=0; g<mGraspList.size(); g++) {
+
+                QString vcFilename(path + QString("/") + QString::number(g+1) + QString("_vc"));
+                QString binvoxVCFilename(vcFilename + QString(".binvox"));
+                QString qualityVCFilename(vcFilename + QString(".quality"));
+                //saveBinvoxOfContacts(binvoxCFilename, getContactPointsLocationsFromHand());
+                saveBinvoxOfContacts(binvoxVCFilename, getVirtualContactPointsLocationsFromHand());
+
+                // also save the energy!
+                std::ofstream qualityOutput(qualityVCFilename.toStdString().c_str(), std::ios::out | std::ios::binary);
+
+                if (qualityOutput.is_open())
+                {
+                    qualityOutput << "epsilon_quality=" << mGraspList[g]->EpsilonQuality() << "\n";
+                    qualityOutput << "volume_quality=" << mGraspList[g]->VolumeQuality() << "\n";
+                    qualityOutput.close();
+                } else {
+                    QTWARNING("could not open " + qualityVCFilename + "for writing");
+                }
+                qualityOutput.close();
+                nextGraspButton_clicked(); //use this button to load the next grasp to save
+            }
         }
     }
 }
