@@ -39,6 +39,16 @@ class GraspitDBGrasp;
 class GraspitDBModel;
 class Hand;
 
+struct energyValues {
+    double new_planned_energy;
+    double mQualEpsilon;
+    double mQualVolume;
+    double gpsEpsilon;
+    double gpsVolume;
+};
+
+
+
 namespace db_planner {
 	class DatabaseManager;
 	class Model;
@@ -96,9 +106,15 @@ private:
 	void initializeGraspInfo();
 
     void saveBinvoxOfContacts(QString fileName, std::vector<vec3> contactLocs);
+    void saveBinvoxOfContactsDirectIndex(QString fileName, std::vector<vec3> contactLocs);
+
     std::vector<vec3> getContactPointsLocationsFromObject();
     std::vector<vec3> getContactPointsLocationsFromHand();
     std::vector<vec3> getVirtualContactPointsLocationsFromHand();
+
+    energyValues evaluateGraspInDB(int graspIndexInDB);
+    energyValues perturbAndEvaluateGraspInDB(int graspIndexInDB);
+
 
 
 public:
